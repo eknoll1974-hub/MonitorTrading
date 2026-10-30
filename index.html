@@ -510,6 +510,7 @@ td:first-child,th:first-child { text-align:left; }
         notifySignal(result.signal, symbol, market.toUpperCase() + " · " + result.explanation);
       }
     }
+    if (market === $("market").value) showRecommendations(getRecommendations(symbol, market));
   }
 
   function render(candles, symbol, market) {
@@ -554,24 +555,7 @@ td:first-child,th:first-child { text-align:left; }
         c.volume.toFixed(2) + "</td></tr>";
     }).join("");
 
-    const lastKey = "monitorTrading_lastCandle_" + market + "_" + symbol;
-    const signalKey = "monitorTrading_lastSignal_" + market + "_" + symbol;
-    const priorTime = Number(localStorage.getItem(lastKey) || 0);
-    const priorSignal = localStorage.getItem(signalKey) || "";
-    let recommendations = getRecommendations(symbol, market);
-    if (last.time > priorTime) {
-      recommendations = saveRecommendation(symbol, market, {
-        time:last.time, price:last.close, signal:result.signal,
-        explanation:result.explanation, ev, ea, rsi:currentRsi
-      });
-      localStorage.setItem(lastKey, String(last.time));
-      localStorage.setItem(signalKey, result.signal);
-      // Alertar solo cuando cambia la recomendación, para evitar avisos repetidos.
-      if (priorTime > 0 && result.signal !== priorSignal && result.signal !== "ESPERAR") {
-        notifySignal(result.signal, symbol, result.explanation);
-      }
-    }
-    showRecommendations(recommendations);
+
   }
 
   async function update() {
