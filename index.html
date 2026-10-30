@@ -151,6 +151,12 @@ td:first-child,th:first-child { text-align:left; }
 </div>
 
 <div class="panel">
+  <h3>Historial de recomendaciones</h3>
+  <p class="info">Registro de señales al cierre de cada vela de 5 minutos. Las alertas se envían cuando cambia la decisión.</p>
+  <div id="signalHistory" class="info">Todavía no hay recomendaciones guardadas.</div>
+</div>
+
+<div class="panel">
   <h3>Configuración de la estrategia</h3>
   <p class="info">
     Temporalidad: 5 minutos. EMA rápida: 20. EMA lenta: 200.
@@ -336,118 +342,154 @@ td:first-child,th:first-child { text-align:left; }
     $("explanation").textContent = explanation;
   }
 
-  function notifySignal(signal, symbol) {
-    if (!previousSignal) {
-      previousSignal = signal;
-      return;
-    }
-
-    if (signal === previousSignal) return;
-    previousSignal = signal;
-
-    if (signal !== "Posible entrada" && signal !== "Posible salida") return;
-
+  function notifySignal(signal, symbol, explanation) {
     try {
-      if ("Notification" in window &&
-          Notification.permission === "granted") {
-        new Notification("Monitor Trading · " + symbol, {
-          body:signal + " · Revisá los indicadores antes de operar."
-        });
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("Monitor Trading · " + symbol, {body:signal + " · " + explanation});
       }
     } catch(e) {}
-
     if (audioReady) {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const ctx = new AudioContext();
         const oscillator = ctx.createOscillator();
         const gain = ctx.createGain();
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-        oscillator.frequency.value = signal === "Posible entrada" ? 880 : 440;
+        oscillator.connect(gain); gain.connect(ctx.destination);
+        oscillator.frequency.value = signal.includes("LONG") ? 880 : 440;
         gain.gain.value = 0.12;
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.25);
+        oscillator.start(); oscillator.stop(ctx.currentTime + 0.35);
       } catch(e) {}
     }
+  }
+
+  function recommendationKey(symbol, market) {
+    return "monitorTrading_signals_" + market + "_" + symbol;
+  }
+  function getRecommendations(symbol, market) {
+    try { return JSON.parse(localStorage.getItem(recommendationKey(symbol, market)) || "[]"); }
+    catch(e) { return []; }
+  }
+  function saveRecommendation(symbol, market, item) {
+    const list = getRecommendations(symbol, market);
+    list.push(item);
+    const trimmed = list.slice(-300);
+    localStorage.setItem(recommendationKey(symbol, market), JSON.stringify(trimmed));
+    return trimmed;
+  }
+  function showRecommendations(list) {
+    if (!list.length) {
+      $("signalHistory").textContent = "Todavía no hay recomendaciones guardadas.";
+      return;
+    }
+    $("signalHistory").innerHTML = list.slice().reverse().slice(0, 12).map(item =>
+      "<div style='padding:8px 0;border-bottom:1px solid var(--border)'><strong>" +
+      item.signal + "</strong> · " + formatTime(item.time) + " · " +
+      formatPrice(item.price) + "<br><span class='muted'>" +
+      item.explanation + "</span></div>"
+    ).join("");
+  }
+
+  function evaluateRecommendation(candles, ev, ea, currentRsi) {
+    const last = candles[candles.length - 1];
+    const prev = candles[candles.length - 2];
+    const recent = candles.slice(-13, -1);
+    const resistance = Math.max(...recent.map(c => c.high));
+    const support = Math.min(...recent.map(c => c.low));
+    const bullish = ev > ea, bearish = ev < ea;
+    const green = last.close > last.open, red = last.close < last.open;
+    const aboveEV = last.close > ev, belowEV = last.close < ev;
+    const priorRsi = rsi(candles.slice(0, -1).map(c => c.close), 14);
+    const rsiRising = priorRsi !== null && currentRsi > priorRsi;
+    const breakHigh = last.close > resistance;
+    const breakLow = last.close < support;
+    const reclaimEV = prev.close <= ev && last.close > ev;
+    const loseEV = prev.close >= ev && last.close < ev;
+    let signal = "ESPERAR";
+    let explanation = "No hay confirmación suficiente. Esperá una nueva vela y evitá anticiparte.";
+
+    if (bullish && aboveEV && green && currentRsi >= 52 && currentRsi <= 68 &&
+        (breakHigh || reclaimEV) && rsiRising) {
+      signal = "ENTRAR LONG";
+      explanation = "Tendencia alcista, cierre por encima de EV y ruptura/recuperación confirmada con RSI fortaleciéndose. Definí el stop antes de operar.";
+    } else if (bearish && belowEV && red && currentRsi <= 48 && currentRsi >= 32 &&
+        (breakLow || loseEV) && !rsiRising) {
+      signal = "ENTRAR SHORT";
+      explanation = "Tendencia bajista, cierre por debajo de EV y pérdida/ruptura confirmada con RSI debilitándose. Definí el stop antes de operar.";
+    } else if (bullish && (Math.abs(last.close - ev) / ev < 0.004 || last.close <= resistance) &&
+        currentRsi >= 45 && currentRsi < 60) {
+      signal = "PREPARANDO LONG";
+      explanation = "Sesgo alcista. Vigilar recuperación de EV o ruptura de resistencia reciente en " + formatPrice(resistance) + " con vela verde y RSI en ascenso.";
+    } else if (bearish && (Math.abs(last.close - ev) / ev < 0.004 || last.close >= support) &&
+        currentRsi > 40 && currentRsi <= 55) {
+      signal = "PREPARANDO SHORT";
+      explanation = "Sesgo bajista. Vigilar pérdida del soporte reciente en " + formatPrice(support) + " con vela roja y RSI debilitándose.";
+    } else if (bullish && (belowEV || currentRsi < 45)) {
+      signal = "ESPERAR LONG";
+      explanation = "La tendencia de fondo sigue alcista, pero falta recuperar EV y confirmar fuerza. EV: " + formatPrice(ev) + ".";
+    } else if (bearish && (aboveEV || currentRsi > 55)) {
+      signal = "ESPERAR SHORT";
+      explanation = "La tendencia de fondo sigue bajista, pero falta perder EV y confirmar debilidad. EV: " + formatPrice(ev) + ".";
+    }
+    return {signal, explanation, support, resistance};
   }
 
   function render(candles, symbol, market) {
     const closes = candles.map(c => c.close);
     const last = candles[candles.length - 1];
-    const previous = candles[candles.length - 2];
-
-    const ev = ema(closes, 20);
-    const ea = ema(closes, 200);
+    const ev = ema(closes, 20), ea = ema(closes, 200);
     const currentRsi = rsi(closes, 14);
-
-    if (ev === null || ea === null || currentRsi === null) {
+    if (ev === null || ea === null || currentRsi === null)
       throw new Error("Todavía no hay suficientes velas para calcular EMA 200.");
-    }
 
     $("price").textContent = formatPrice(last.close);
-    $("updated").textContent =
-      "Última vela cerrada: " + new Date(last.time).toLocaleString("es-AR") +
-      " · " + symbol + " · " + (market === "spot" ? "Spot" : "Futuros");
-
+    $("updated").textContent = "Última vela cerrada: " +
+      new Date(last.time).toLocaleString("es-AR") + " · " + symbol +
+      " · " + (market === "spot" ? "Spot" : "Futuros");
     $("ema20").textContent = formatPrice(ev);
     $("ema200").textContent = formatPrice(ea);
     $("rsi").textContent = currentRsi.toFixed(2);
     $("candle").textContent = last.close >= last.open ? "VV · Verde" : "VR · Roja";
 
-    const bullishTrend = ev > ea;
-    const bearishTrend = ev < ea;
-    const aboveEV = last.close > ev;
-    const belowEV = last.close < ev;
-    const rsiUp = currentRsi >= 50 && currentRsi < 70;
-    const rsiDown = currentRsi < 50 && currentRsi > 30;
+    const result = evaluateRecommendation(candles, ev, ea, currentRsi);
+    const box = $("signal");
+    box.textContent = result.signal;
+    box.className = "status";
+    if (result.signal === "ENTRAR LONG") box.classList.add("green");
+    else if (result.signal === "ENTRAR SHORT") box.classList.add("red");
+    else if (result.signal.includes("PREPARANDO")) box.classList.add("yellow");
+    $("explanation").textContent = result.explanation + " Soporte reciente: " +
+      formatPrice(result.support) + " · Resistencia reciente: " +
+      formatPrice(result.resistance) + ".";
 
-    let signal = "Esperar";
-    let explanation = "No hay una configuración clara. Esperá una señal más definida.";
-
-    if (bullishTrend && aboveEV && rsiUp && last.close > last.open) {
-      signal = "Posible entrada";
-      explanation = "Tendencia alcista: EMA 20 por encima de EMA 200, cierre sobre EMA 20 y RSI entre 50 y 70. Confirmá el contexto antes de operar.";
-    } else if (bearishTrend && belowEV && rsiDown && last.close < last.open) {
-      signal = "Posible salida";
-      explanation = "Sesgo bajista: EMA 20 por debajo de EMA 200, cierre bajo EMA 20 y RSI entre 30 y 50. Si estás comprado, revisá el riesgo.";
-    } else if (bullishTrend && (belowEV || currentRsi < 50)) {
-      signal = "Preparando entrada";
-      explanation = "La tendencia general es alcista, pero falta confirmación de impulso o recuperación de EMA 20.";
-    } else if (bearishTrend && (aboveEV || currentRsi > 50)) {
-      signal = "Preparando entrada";
-      explanation = "La tendencia general es bajista, pero puede haber una corrección. Esperá confirmación antes de decidir.";
-    }
-
-    setSignal(signal, explanation);
-    notifySignal(signal, symbol);
-
-    let trendText = bullishTrend
-      ? "EMA 20 está por encima de EMA 200 (sesgo alcista)."
-      : "EMA 20 está por debajo de EMA 200 (sesgo bajista).";
-
-    let priceText = aboveEV
-      ? "El cierre está por encima de EMA 20."
-      : "El cierre está por debajo de EMA 20.";
-
-    let rsiText = currentRsi >= 70
-      ? "RSI en zona alta (posible sobrecompra)."
-      : currentRsi <= 30
-        ? "RSI en zona baja (posible sobreventa)."
-        : "RSI en zona intermedia.";
-
-    $("reading").textContent = trendText + " " + priceText + " " +
-      rsiText + " Última vela: " +
-      (last.close >= last.open ? "verde." : "roja.");
+    const trendText = ev > ea ? "EMA 20 está por encima de EMA 200 (sesgo alcista)." :
+      "EMA 20 está por debajo de EMA 200 (sesgo bajista).";
+    $("reading").textContent = trendText + " " +
+      (last.close > ev ? "El cierre está por encima de EMA 20. " : "El cierre está por debajo de EMA 20. ") +
+      (currentRsi >= 70 ? "RSI en zona alta." : currentRsi <= 30 ? "RSI en zona baja." : "RSI en zona intermedia.");
 
     $("history").innerHTML = candles.slice(-10).reverse().map(c => {
       const color = c.close >= c.open ? "greenText" : "redText";
-      const candleName = c.close >= c.open ? "VV" : "VR";
-      return "<tr><td>" + formatTime(c.time) + "</td>" +
-        "<td>" + formatPrice(c.close) + "</td>" +
-        '<td class="' + color + '">' + candleName + "</td>" +
-        "<td>" + c.volume.toFixed(2) + "</td></tr>";
+      return "<tr><td>" + formatTime(c.time) + "</td><td>" +
+        formatPrice(c.close) + "</td><td class='" + color + "'>" +
+        (c.close >= c.open ? "VV" : "VR") + "</td><td>" +
+        c.volume.toFixed(2) + "</td></tr>";
     }).join("");
+
+    const lastKey = "monitorTrading_lastCandle_" + market + "_" + symbol;
+    const priorTime = Number(localStorage.getItem(lastKey) || 0);
+    let recommendations = getRecommendations(symbol, market);
+    if (last.time > priorTime) {
+      recommendations = saveRecommendation(symbol, market, {
+        time:last.time, price:last.close, signal:result.signal,
+        explanation:result.explanation, ev, ea, rsi:currentRsi
+      });
+      localStorage.setItem(lastKey, String(last.time));
+      // La primera lectura establece la referencia; luego alerta en cada nuevo cierre.
+      if (priorTime > 0 && result.signal !== "ESPERAR") {
+        notifySignal(result.signal, symbol, result.explanation);
+      }
+    }
+    showRecommendations(recommendations);
   }
 
   async function update() {
