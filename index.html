@@ -98,7 +98,10 @@ td:first-child,th:first-child { text-align:left; }
 </div>
 
 <div class="panel">
-  <div class="muted">Último precio disponible</div>
+  <div class="muted">Precio actual de Binance · actualización cada 10 segundos</div>
+  <div class="price" id="currentPrice">—</div>
+  <div class="muted" id="tickerUpdated">Esperando cotización actual...</div>
+  <div class="muted" style="margin-top:12px">Último cierre confirmado de vela de 5 minutos</div>
   <div class="price" id="price">—</div>
   <div class="muted" id="updated">Esperando datos...</div>
   <div class="status" id="signal">Esperando datos</div>
@@ -235,6 +238,54 @@ td:first-child,th:first-child { text-align:left; }
       return JSON.parse(localStorage.getItem(storageKey(symbol, market)) || "[]");
     } catch(e) {
       return [];
+    }
+  }
+
+  async function fetchCurrentPrice(symbol, market) {
+    const urls = market === "futures"
+      ? ["https://fapi.binance.com/fapi/v1/ticker/price?symbol=" + encodeURIComponent(symbol)]
+      : [
+          "https://data-api.binance.vision/api/v3/ticker/price?symbol=" + encodeURIComponent(symbol),
+          "https://api.binance.com/api/v3/ticker/price?symbol=" + encodeURIComponent(symbol)
+        ];
+
+    let lastError;
+    for (const url of urls) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        try {
+          const response = await fetch(url, {cache:"no-store", signal:controller.signal});
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          const data = await response.json();
+          const price = Number(data.price);
+          if (!Number.isFinite(price)) throw new Error("Precio inválido");
+          return price;
+        } finally {
+          clearTimeout(timeout);
+        }
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error("No se pudo obtener el precio actual.");
+  }
+
+  async function updateTicker() {
+    const symbol = $("symbol").value.trim().toUpperCase();
+    const market = $("market").value;
+    if (!/^[A-Z0-9]{5,20}$/.test(symbol)) return;
+    try {
+      const price = await fetchCurrentPrice(symbol, market);
+      // Evita mostrar una respuesta atrasada si el usuario cambió el par.
+      if (symbol !== $("symbol").value.trim().toUpperCase() ||
+          market !== $("market").value) return;
+      $("currentPrice").textContent = formatPrice(price);
+      $("tickerUpdated").textContent =
+        "Cotización consultada: " + new Date().toLocaleTimeString("es-AR");
+    } catch (error) {
+      $("tickerUpdated").textContent =
+        "No se pudo actualizar el precio actual; reintentando automáticamente.";
     }
   }
 
@@ -407,6 +458,7 @@ td:first-child,th:first-child { text-align:left; }
 
     const symbol = $("symbol").value.trim().toUpperCase();
     const market = $("market").value;
+    updateTicker();
 
     if (!/^[A-Z0-9]{5,20}$/.test(symbol)) {
       $("message").textContent = "Ingresá un símbolo válido, por ejemplo BTCUSDT.";
@@ -469,16 +521,20 @@ td:first-child,th:first-child { text-align:left; }
 
   $("market").addEventListener("change", () => {
     previousSignal = "";
+    updateTicker();
     update();
   });
 
   $("symbol").addEventListener("change", () => {
     previousSignal = "";
+    updateTicker();
     update();
   });
 
   update();
+  updateTicker();
   setInterval(update, REFRESH_MS);
+  setInterval(updateTicker, 10000);
 })();
 </script>
 </body>
