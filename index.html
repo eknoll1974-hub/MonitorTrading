@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor Trading</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#10151f; --panel:#1b2432; --text:#edf2f7;
+  --muted:#9ba9ba; --green:#22c58b; --red:#ff6474;
+  --yellow:#f4c45e; --blue:#69aaff; --border:#344154;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; padding:16px; background:var(--bg); color:var(--text);
+  font-family:Arial,sans-serif; max-width:850px; margin:auto;
+}
+h1 { font-size:25px; margin:5px 0 4px; }
+.subtitle { color:var(--muted); font-size:13px; margin-bottom:18px; }
+.panel {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:12px; padding:15px; margin-bottom:13px;
+}
+.controls {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+label { display:block; color:var(--muted); font-size:12px; margin-bottom:6px; }
+select,input,button {
+  width:100%; padding:12px; border-radius:8px;
+  border:1px solid var(--border); background:#111a27;
+  color:var(--text); font-size:15px;
+}
+button { cursor:pointer; font-weight:bold; }
+button.primary { background:#2368bd; border:0; }
+button.secondary { background:#29384b; }
+.actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.price { font-size:30px; font-weight:bold; margin:5px 0; }
+.muted { color:var(--muted); font-size:12px; }
+.status {
+  font-size:20px; font-weight:bold; padding:12px;
+  border-radius:9px; text-align:center; margin-top:10px;
+  background:#29384b;
+}
+.status.green { color:var(--green); background:#12372f; }
+.status.red { color:var(--red); background:#401f2a; }
+.status.yellow { color:var(--yellow); background:#40351e; }
+.grid {
+  display:grid; grid-template-columns:repeat(2,1fr); gap:10px;
+}
+.metric { background:#111a27; padding:12px; border-radius:9px; }
+.metric .value { font-size:19px; font-weight:bold; margin-top:5px; }
+.greenText { color:var(--green); }
+.redText { color:var(--red); }
+.yellowText { color:var(--yellow); }
+.info { font-size:13px; line-height:1.5; color:var(--muted); }
+#message { font-size:13px; margin-top:10px; color:var(--muted); }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+td,th { text-align:right; padding:8px 4px; border-bottom:1px solid var(--border); }
+td:first-child,th:first-child { text-align:left; }
+@media(max-width:420px) {
+  body { padding:10px; }
+  .price { font-size:25px; }
+}
+</style>
+</head>
+<body>
+
+<h1>Monitor Trading</h1>
+<div class="subtitle">Binance · Velas de 5 minutos · EMA 20 / EMA 200 · RSI 14</div>
+
+<div class="panel">
+  <div class="controls">
+    <div>
+      <label for="market">Mercado</label>
+      <select id="market">
+        <option value="spot">Spot</option>
+        <option value="futures">Futuros USDT-M</option>
+      </select>
+    </div>
+    <div>
+      <label for="symbol">Criptomoneda</label>
+      <input id="symbol" value="BTCUSDT" list="symbols" autocomplete="off">
+      <datalist id="symbols">
+        <option value="BTCUSDT"><option value="ETHUSDT">
+        <option value="BNBUSDT"><option value="SOLUSDT">
+        <option value="XRPUSDT"><option value="ADAUSDT">
+        <option value="DOGEUSDT"><option value="AVAXUSDT">
+        <option value="LINKUSDT"><option value="LTCUSDT">
+      </datalist>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="primary" id="refresh">Actualizar ahora</button>
+    <button class="secondary" id="notify">Activar notificaciones</button>
+  </div>
+  <div id="message">Preparado para consultar Binance.</div>
+</div>
+
+<div class="panel">
+  <div class="muted">Último precio disponible</div>
+  <div class="price" id="price">—</div>
+  <div class="muted" id="updated">Esperando datos...</div>
+  <div class="status" id="signal">Esperando datos</div>
+  <p class="info" id="explanation">La señal aparecerá cuando se reciban suficientes velas cerradas.</p>
+</div>
+
+<div class="panel">
+  <h3>Indicadores técnicos</h3>
+  <div class="grid">
+    <div class="metric">
+      <div class="muted">EMA 20 (EV)</div>
+      <div class="value" id="ema20">—</div>
+    </div>
+    <div class="metric">
+      <div class="muted">EMA 200 (EA)</div>
+      <div class="value" id="ema200">—</div>
+    </div>
+    <div class="metric">
+      <div class="muted">RSI 14</div>
+      <div class="value" id="rsi">—</div>
+    </div>
+    <div class="metric">
+      <div class="muted">Última vela cerrada</div>
+      <div class="value" id="candle">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>Lectura del mercado</h3>
+  <div id="reading" class="info">Todavía no hay datos.</div>
+</div>
+
+<div class="panel">
+  <h3>Últimas velas cerradas</h3>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr><th>Hora</th><th>Cierre</th><th>Vela</th><th>Volumen</th></tr>
+      </thead>
+      <tbody id="history">
+        <tr><td colspan="4">Sin datos</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Se conservan localmente hasta 3.000 velas por par y mercado.</p>
+</div>
+
+<div class="panel">
+  <h3>Configuración de la estrategia</h3>
+  <p class="info">
+    Temporalidad: 5 minutos. EMA rápida: 20. EMA lenta: 200.
+    RSI: 14. Los indicadores se calculan sobre velas cerradas.
+    Las señales son orientativas y no ejecutan operaciones.
+  </p>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const REFRESH_MS = 30000;
+  const INTERVAL = "5m";
+  let busy = false;
+  let previousSignal = "";
+  let audioReady = false;
+
+  function formatPrice(n) {
+    if (!Number.isFinite(n)) return "—";
+    return n.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: n < 1 ? 6 : 2
+    });
+  }
+
+  function formatTime(ms) {
+    return new Date(ms).toLocaleTimeString("es-AR", {
+      hour:"2-digit", minute:"2-digit"
+    });
+  }
+
+  function ema(values, period) {
+    if (values.length < period) return null;
+    const multiplier = 2 / (period + 1);
+    let result = values.slice(0, period).reduce((a,b) => a+b, 0) / period;
+    for (let i = period; i < values.length; i++) {
+      result = (values[i] - result) * multiplier + result;
+    }
+    return result;
+  }
+
+  function rsi(values, period = 14) {
+    if (values.length <= period) return null;
+    let gains = 0, losses = 0;
+    for (let i = 1; i <= period; i++) {
+      const change = values[i] - values[i-1];
+      if (change > 0) gains += change;
+      else losses -= change;
+    }
+    let avgGain = gains / period;
+    let avgLoss = losses / period;
+
+    for (let i = period + 1; i < values.length; i++) {
+      const change = values[i] - values[i-1];
+      avgGain = (avgGain * (period-1) + Math.max(change,0)) / period;
+      avgLoss = (avgLoss * (period-1) + Math.max(-change,0)) / period;
+    }
+    if (avgLoss === 0) return 100;
+    return 100 - (100 / (1 + avgGain / avgLoss));
+  }
+
+  function storageKey(symbol, market) {
+    return "monitorTrading_" + market + "_" + symbol;
+  }
+
+  function saveCandles(symbol, market, candles) {
+    try {
+      const key = storageKey(symbol, market);
+      const old = JSON.parse(localStorage.getItem(key) || "[]");
+      const combined = new Map();
+      [...old, ...candles].forEach(c => combined.set(c.time, c));
+      const sorted = [...combined.values()]
+        .sort((a,b) => a.time-b.time)
+        .slice(-3000);
+      localStorage.setItem(key, JSON.stringify(sorted));
+    } catch(e) {
+      console.warn("No se pudo guardar el historial local", e);
+    }
+  }
+
+  function getCandles(symbol, market) {
+    try {
+      return JSON.parse(localStorage.getItem(storageKey(symbol, market)) || "[]");
+    } catch(e) {
+      return [];
+    }
+  }
+
+  async function fetchCandles(symbol, market) {
+    const base = market === "futures"
+      ? "https://fapi.binance.com/fapi/v1/klines"
+      : "https://api.binance.com/api/v3/klines";
+
+    const url = base + "?symbol=" + encodeURIComponent(symbol) +
+      "&interval=" + INTERVAL + "&limit=1000";
+
+    const response = await fetch(url, {cache:"no-store"});
+    if (!response.ok) {
+      let detail = "";
+      try {
+        const data = await response.json();
+        detail = data.msg || "";
+      } catch(e) {}
+      throw new Error("Binance respondió " + response.status +
+        (detail ? ": " + detail : ""));
+    }
+
+    const raw = await response.json();
+    if (!Array.isArray(raw) || !raw.length) {
+      throw new Error("Binance no devolvió velas para ese par.");
+    }
+
+    return raw.map(k => ({
+      time:Number(k[0]),
+      open:Number(k[1]),
+      high:Number(k[2]),
+      low:Number(k[3]),
+      close:Number(k[4]),
+      volume:Number(k[5]),
+      closeTime:Number(k[6])
+    }));
+  }
+
+  function setSignal(type, explanation) {
+    const box = $("signal");
+    box.textContent = type;
+    box.className = "status";
+
+    if (type === "Posible entrada") box.classList.add("green");
+    else if (type === "Posible salida") box.classList.add("red");
+    else if (type === "Preparando entrada") box.classList.add("yellow");
+
+    $("explanation").textContent = explanation;
+  }
+
+  function notifySignal(signal, symbol) {
+    if (!previousSignal) {
+      previousSignal = signal;
+      return;
+    }
+
+    if (signal === previousSignal) return;
+    previousSignal = signal;
+
+    if (signal !== "Posible entrada" && signal !== "Posible salida") return;
+
+    try {
+      if ("Notification" in window &&
+          Notification.permission === "granted") {
+        new Notification("Monitor Trading · " + symbol, {
+          body:signal + " · Revisá los indicadores antes de operar."
+        });
+      }
+    } catch(e) {}
+
+    if (audioReady) {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.frequency.value = signal === "Posible entrada" ? 880 : 440;
+        gain.gain.value = 0.12;
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.25);
+      } catch(e) {}
+    }
+  }
+
+  function render(candles, symbol, market) {
+    const closes = candles.map(c => c.close);
+    const last = candles[candles.length - 1];
+    const previous = candles[candles.length - 2];
+
+    const ev = ema(closes, 20);
+    const ea = ema(closes, 200);
+    const currentRsi = rsi(closes, 14);
+
+    if (ev === null || ea === null || currentRsi === null) {
+      throw new Error("Todavía no hay suficientes velas para calcular EMA 200.");
+    }
+
+    $("price").textContent = formatPrice(last.close);
+    $("updated").textContent =
+      "Última vela cerrada: " + new Date(last.time).toLocaleString("es-AR") +
+      " · " + symbol + " · " + (market === "spot" ? "Spot" : "Futuros");
+
+    $("ema20").textContent = formatPrice(ev);
+    $("ema200").textContent = formatPrice(ea);
+    $("rsi").textContent = currentRsi.toFixed(2);
+    $("candle").textContent = last.close >= last.open ? "VV · Verde" : "VR · Roja";
+
+    const bullishTrend = ev > ea;
+    const bearishTrend = ev < ea;
+    const aboveEV = last.close > ev;
+    const belowEV = last.close < ev;
+    const rsiUp = currentRsi >= 50 && currentRsi < 70;
+    const rsiDown = currentRsi < 50 && currentRsi > 30;
+
+    let signal = "Esperar";
+    let explanation = "No hay una configuración clara. Esperá una señal más definida.";
+
+    if (bullishTrend && aboveEV && rsiUp && last.close > last.open) {
+      signal = "Posible entrada";
+      explanation = "Tendencia alcista: EMA 20 por encima de EMA 200, cierre sobre EMA 20 y RSI entre 50 y 70. Confirmá el contexto antes de operar.";
+    } else if (bearishTrend && belowEV && rsiDown && last.close < last.open) {
+      signal = "Posible salida";
+      explanation = "Sesgo bajista: EMA 20 por debajo de EMA 200, cierre bajo EMA 20 y RSI entre 30 y 50. Si estás comprado, revisá el riesgo.";
+    } else if (bullishTrend && (belowEV || currentRsi < 50)) {
+      signal = "Preparando entrada";
+      explanation = "La tendencia general es alcista, pero falta confirmación de impulso o recuperación de EMA 20.";
+    } else if (bearishTrend && (aboveEV || currentRsi > 50)) {
+      signal = "Preparando entrada";
+      explanation = "La tendencia general es bajista, pero puede haber una corrección. Esperá confirmación antes de decidir.";
+    }
+
+    setSignal(signal, explanation);
+    notifySignal(signal, symbol);
+
+    let trendText = bullishTrend
+      ? "EMA 20 está por encima de EMA 200 (sesgo alcista)."
+      : "EMA 20 está por debajo de EMA 200 (sesgo bajista).";
+
+    let priceText = aboveEV
+      ? "El cierre está por encima de EMA 20."
+      : "El cierre está por debajo de EMA 20.";
+
+    let rsiText = currentRsi >= 70
+      ? "RSI en zona alta (posible sobrecompra)."
+      : currentRsi <= 30
+        ? "RSI en zona baja (posible sobreventa)."
+        : "RSI en zona intermedia.";
+
+    $("reading").textContent = trendText + " " + priceText + " " +
+      rsiText + " Última vela: " +
+      (last.close >= last.open ? "verde." : "roja.");
+
+    $("history").innerHTML = candles.slice(-10).reverse().map(c => {
+      const color = c.close >= c.open ? "greenText" : "redText";
+      const candleName = c.close >= c.open ? "VV" : "VR";
+      return "<tr><td>" + formatTime(c.time) + "</td>" +
+        "<td>" + formatPrice(c.close) + "</td>" +
+        '<td class="' + color + '">' + candleName + "</td>" +
+        "<td>" + c.volume.toFixed(2) + "</td></tr>";
+    }).join("");
+  }
+
+  async function update() {
+    if (busy) return;
+    busy = true;
+    $("refresh").disabled = true;
+    $("message").textContent = "Consultando Binance...";
+
+    const symbol = $("symbol").value.trim().toUpperCase();
+    const market = $("market").value;
+
+    if (!/^[A-Z0-9]{5,20}$/.test(symbol)) {
+      $("message").textContent = "Ingresá un símbolo válido, por ejemplo BTCUSDT.";
+      busy = false;
+      $("refresh").disabled = false;
+      return;
+    }
+
+    try {
+      const fetched = await fetchCandles(symbol, market);
+      const now = Date.now();
+
+      // Se descarta la vela que todavía está en formación.
+      const closed = fetched.filter(c => c.closeTime < now);
+
+      if (closed.length < 200) {
+        throw new Error("No hay suficientes velas cerradas.");
+      }
+
+      saveCandles(symbol, market, closed);
+      const stored = getCandles(symbol, market);
+
+      render(stored, symbol, market);
+      $("message").textContent =
+        "Actualizado correctamente · " +
+        new Date().toLocaleTimeString("es-AR") +
+        " · " + stored.length + " velas guardadas localmente.";
+
+    } catch(error) {
+      $("message").textContent = "Error: " + error.message +
+        ". Verificá el par o intentá nuevamente.";
+    } finally {
+      busy = false;
+      $("refresh").disabled = false;
+    }
+  }
+
+  $("refresh").addEventListener("click", () => {
+    audioReady = true;
+    update();
+  });
+
+  $("notify").addEventListener("click", async () => {
+    audioReady = true;
+    if (!("Notification" in window)) {
+      $("message").textContent =
+        "Este navegador no admite notificaciones.";
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      $("message").textContent = permission === "granted"
+        ? "Notificaciones activadas."
+        : "No se concedió permiso para notificaciones.";
+    } catch(e) {
+      $("message").textContent =
+        "No se pudieron activar las notificaciones.";
+    }
+  });
+
+  $("market").addEventListener("change", () => {
+    previousSignal = "";
+    update();
+  });
+
+  $("symbol").addEventListener("change", () => {
+    previousSignal = "";
+    update();
+  });
+
+  update();
+  setInterval(update, REFRESH_MS);
+})();
+</script>
+</body>
+</html>
