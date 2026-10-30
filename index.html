@@ -109,6 +109,25 @@ td:first-child,th:first-child { text-align:left; }
 </div>
 
 <div class="panel">
+  <h3>Recomendaciones por mercado</h3>
+  <div class="grid">
+    <div class="metric">
+      <strong>SPOT · Solo compras</strong>
+      <div class="status" id="spotSignal">Analizando...</div>
+      <p class="info" id="spotAdvice">Esperando datos.</p>
+      <p class="info" id="spotLevels"></p>
+    </div>
+    <div class="metric">
+      <strong>FUTUROS USDT-M · LONG / SHORT</strong>
+      <div class="status" id="futuresSignal">Analizando...</div>
+      <p class="info" id="futuresAdvice">Esperando datos.</p>
+      <p class="info" id="futuresLevels"></p>
+    </div>
+  </div>
+  <p class="muted">Ambos mercados se analizan por separado con sus propias velas de Binance. Actualización de señales al cierre de cada vela de 5 minutos.</p>
+</div>
+
+<div class="panel">
   <h3>Indicadores técnicos</h3>
   <div class="grid">
     <div class="metric">
@@ -389,7 +408,7 @@ td:first-child,th:first-child { text-align:left; }
     ).join("");
   }
 
-  function evaluateRecommendation(candles, ev, ea, currentRsi) {
+  function evaluateRecommendation(candles, ev, ea, currentRsi, market) {
     const last = candles[candles.length - 1];
     const prev = candles[candles.length - 2];
     const recent = candles.slice(-13, -1);
@@ -411,7 +430,7 @@ td:first-child,th:first-child { text-align:left; }
         (breakHigh || reclaimEV) && rsiRising) {
       signal = "ENTRAR LONG";
       explanation = "Tendencia alcista, cierre por encima de EV y ruptura/recuperación confirmada con RSI fortaleciéndose. Definí el stop antes de operar.";
-    } else if (bearish && belowEV && red && currentRsi <= 48 && currentRsi >= 32 &&
+    } else if (market === "futures" && bearish && belowEV && red && currentRsi <= 48 && currentRsi >= 32 &&
         (breakLow || loseEV) && !rsiRising) {
       signal = "ENTRAR SHORT";
       explanation = "Tendencia bajista, cierre por debajo de EV y pérdida/ruptura confirmada con RSI debilitándose. Definí el stop antes de operar.";
@@ -419,18 +438,78 @@ td:first-child,th:first-child { text-align:left; }
         currentRsi >= 45 && currentRsi < 60) {
       signal = "PREPARANDO LONG";
       explanation = "Sesgo alcista. Vigilar recuperación de EV o ruptura de resistencia reciente en " + formatPrice(resistance) + " con vela verde y RSI en ascenso.";
-    } else if (bearish && (Math.abs(last.close - ev) / ev < 0.004 || last.close >= support) &&
+    } else if (market === "futures" && bearish && (Math.abs(last.close - ev) / ev < 0.004 || last.close >= support) &&
         currentRsi > 40 && currentRsi <= 55) {
       signal = "PREPARANDO SHORT";
       explanation = "Sesgo bajista. Vigilar pérdida del soporte reciente en " + formatPrice(support) + " con vela roja y RSI debilitándose.";
     } else if (bullish && (belowEV || currentRsi < 45)) {
       signal = "ESPERAR LONG";
       explanation = "La tendencia de fondo sigue alcista, pero falta recuperar EV y confirmar fuerza. EV: " + formatPrice(ev) + ".";
-    } else if (bearish && (aboveEV || currentRsi > 55)) {
+    } else if (market === "futures" && bearish && (aboveEV || currentRsi > 55)) {
       signal = "ESPERAR SHORT";
       explanation = "La tendencia de fondo sigue bajista, pero falta perder EV y confirmar debilidad. EV: " + formatPrice(ev) + ".";
     }
+    if (market === "spot") {
+      if (signal === "ENTRAR LONG") signal = "COMPRAR SPOT";
+      else if (signal === "PREPARANDO LONG") signal = "PREPARANDO COMPRA SPOT";
+      else if (signal === "ESPERAR LONG") signal = "ESPERAR COMPRA SPOT";
+      else signal = "NO COMPRAR · ESPERAR";
+    }
     return {signal, explanation, support, resistance};
+  }
+
+  function renderMarketRecommendation(candles, symbol, market) {
+    const closes = candles.map(c => c.close);
+    const last = candles[candles.length - 1];
+    const ev = ema(closes, 20), ea = ema(closes, 200);
+    const currentRsi = rsi(closes, 14);
+    if (ev === null || ea === null || currentRsi === null) return;
+    const result = evaluateRecommendation(candles, ev, ea, currentRsi, market);
+    const prefix = market === "spot" ? "spot" : "futures";
+    const box = $(prefix + "Signal");
+    box.textContent = result.signal;
+    box.className = "status";
+    if (result.signal.includes("COMPRAR") || result.signal === "ENTRAR LONG") box.classList.add("green");
+    else if (result.signal === "ENTRAR SHORT") box.classList.add("red");
+    else if (result.signal.includes("PREPARANDO")) box.classList.add("yellow");
+
+    const entry = market === "spot"
+      ? result.resistance
+      : result.signal.includes("SHORT") ? result.support : result.resistance;
+    const stop = market === "spot" || result.signal.includes("LONG")
+      ? result.support : result.resistance;
+    const invalidation = market === "spot" || result.signal.includes("LONG")
+      ? "cierre por debajo de soporte"
+      : "cierre por encima de resistencia";
+    $(prefix + "Advice").textContent = result.explanation;
+    $(prefix + "Levels").textContent =
+      "Precio de cierre: " + formatPrice(last.close) +
+      " · EV: " + formatPrice(ev) + " · EA: " + formatPrice(ea) +
+      " · RSI: " + currentRsi.toFixed(1) +
+      " · Entrada a vigilar: " + formatPrice(entry) +
+      " · Stop técnico orientativo: " + formatPrice(stop) +
+      " · Invalidación: " + invalidation + ".";
+
+    const lastKey = "monitorTrading_dualLastCandle_" + market + "_" + symbol;
+    const signalKey = "monitorTrading_dualLastSignal_" + market + "_" + symbol;
+    const priorTime = Number(localStorage.getItem(lastKey) || 0);
+    const priorSignal = localStorage.getItem(signalKey) || "";
+    if (last.time > priorTime) {
+      saveRecommendation(symbol, market, {
+        time:last.time, price:last.close, signal:result.signal,
+        explanation:result.explanation + " Entrada a vigilar: " + formatPrice(entry) +
+          ". Stop orientativo: " + formatPrice(stop) + ".",
+        ev, ea, rsi:currentRsi
+      });
+      localStorage.setItem(lastKey, String(last.time));
+      localStorage.setItem(signalKey, result.signal);
+      const actionable = market === "spot"
+        ? result.signal === "COMPRAR SPOT"
+        : result.signal === "ENTRAR LONG" || result.signal === "ENTRAR SHORT";
+      if (priorTime > 0 && actionable && result.signal !== priorSignal) {
+        notifySignal(result.signal, symbol, market.toUpperCase() + " · " + result.explanation);
+      }
+    }
   }
 
   function render(candles, symbol, market) {
@@ -450,7 +529,7 @@ td:first-child,th:first-child { text-align:left; }
     $("rsi").textContent = currentRsi.toFixed(2);
     $("candle").textContent = last.close >= last.open ? "VV · Verde" : "VR · Roja";
 
-    const result = evaluateRecommendation(candles, ev, ea, currentRsi);
+    const result = evaluateRecommendation(candles, ev, ea, currentRsi, market);
     const box = $("signal");
     box.textContent = result.signal;
     box.className = "status";
@@ -513,24 +592,28 @@ td:first-child,th:first-child { text-align:left; }
     }
 
     try {
-      const fetched = await fetchCandles(symbol, market);
+      const [spotFetched, futuresFetched] = await Promise.all([
+        fetchCandles(symbol, "spot"),
+        fetchCandles(symbol, "futures")
+      ]);
       const now = Date.now();
-
-      // Se descarta la vela que todavía está en formación.
-      const closed = fetched.filter(c => c.closeTime < now);
-
-      if (closed.length < 200) {
-        throw new Error("No hay suficientes velas cerradas.");
+      const spotClosed = spotFetched.filter(c => c.closeTime < now);
+      const futuresClosed = futuresFetched.filter(c => c.closeTime < now);
+      if (spotClosed.length < 200 || futuresClosed.length < 200) {
+        throw new Error("No hay suficientes velas cerradas en Spot o Futuros.");
       }
-
-      saveCandles(symbol, market, closed);
-      const stored = getCandles(symbol, market);
-
+      saveCandles(symbol, "spot", spotClosed);
+      saveCandles(symbol, "futures", futuresClosed);
+      const spotStored = getCandles(symbol, "spot");
+      const futuresStored = getCandles(symbol, "futures");
+      const stored = market === "spot" ? spotStored : futuresStored;
       render(stored, symbol, market);
+      renderMarketRecommendation(spotStored, symbol, "spot");
+      renderMarketRecommendation(futuresStored, symbol, "futures");
       $("message").textContent =
         "Actualizado correctamente · " +
         new Date().toLocaleTimeString("es-AR") +
-        " · " + stored.length + " velas guardadas localmente.";
+        " · Spot: " + spotStored.length + " velas · Futuros: " + futuresStored.length + " velas guardadas.";
 
     } catch(error) {
       $("message").textContent = "Error: " + error.message +
