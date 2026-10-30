@@ -476,7 +476,9 @@ td:first-child,th:first-child { text-align:left; }
     }).join("");
 
     const lastKey = "monitorTrading_lastCandle_" + market + "_" + symbol;
+    const signalKey = "monitorTrading_lastSignal_" + market + "_" + symbol;
     const priorTime = Number(localStorage.getItem(lastKey) || 0);
+    const priorSignal = localStorage.getItem(signalKey) || "";
     let recommendations = getRecommendations(symbol, market);
     if (last.time > priorTime) {
       recommendations = saveRecommendation(symbol, market, {
@@ -484,8 +486,9 @@ td:first-child,th:first-child { text-align:left; }
         explanation:result.explanation, ev, ea, rsi:currentRsi
       });
       localStorage.setItem(lastKey, String(last.time));
-      // La primera lectura establece la referencia; luego alerta en cada nuevo cierre.
-      if (priorTime > 0 && result.signal !== "ESPERAR") {
+      localStorage.setItem(signalKey, result.signal);
+      // Alertar solo cuando cambia la recomendación, para evitar avisos repetidos.
+      if (priorTime > 0 && result.signal !== priorSignal && result.signal !== "ESPERAR") {
         notifySignal(result.signal, symbol, result.explanation);
       }
     }
