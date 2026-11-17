@@ -7,9 +7,14 @@
 <title>Mis precios</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f1f3f7;color:#172033;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{position:sticky;top:0;z-index:5;background:#172554;color:#fff;padding:12px 14px;box-shadow:0 2px 10px #17255430}
-.head{max-width:850px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}h1{font-size:18px;margin:0}.sub{font-size:11px;color:#cbd5e1}
-main{max-width:850px;margin:auto;padding:10px 9px 30px}
+header{position:sticky;top:0;z-index:5;background:#172554;color:#fff;padding:11px 13px;box-shadow:0 2px 10px #17255430}
+.head{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}h1{font-size:18px;margin:0}.sub{font-size:11px;color:#cbd5e1}
+.layout{max-width:1100px;margin:auto;padding:10px 9px 30px;display:grid;grid-template-columns:100px minmax(0,1fr);gap:10px;align-items:start}
+.sidebar{position:sticky;top:66px;background:#fff;border:1px solid #e0e5ed;border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px}
+.catbtn{border:0;background:transparent;color:#536078;text-align:left;padding:8px 6px;border-radius:7px;font:700 11px/1.25 system-ui;cursor:pointer;overflow-wrap:anywhere}
+.catbtn.active{background:#e8eefc;color:#173b91}
+.catcount{display:block;font-size:9px;font-weight:500;opacity:.75;margin-top:2px}
+#products{min-width:0}
 .card{background:#fff;border:1px solid #e0e5ed;border-radius:12px;overflow:hidden;margin-bottom:11px;box-shadow:0 2px 7px #14213d0b}
 .cardhead{padding:9px 11px;display:flex;align-items:center;gap:8px;min-height:43px}
 .name{font-weight:750;font-size:14px;min-width:0;overflow-wrap:anywhere}.store{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#687386;font-weight:800}
@@ -17,30 +22,47 @@ main{max-width:850px;margin:auto;padding:10px 9px 30px}
 .framewrap{height:620px;background:#fff;border-top:1px solid #e8ebf0;position:relative}
 iframe{display:block;width:100%;height:100%;border:0;background:#fff}
 .hint{padding:8px 11px;color:#687386;font-size:11px;background:#fafbfc;border-top:1px solid #edf0f4}
+.empty{background:#fff;border:1px dashed #cbd5e1;border-radius:10px;padding:18px;color:#687386;font-size:12px}
 footer{text-align:center;color:#8791a1;font-size:10px;padding:8px 12px 20px}
-@media(min-width:600px){main{padding:14px}.framewrap{height:720px}}
+@media(min-width:700px){.layout{padding:14px}.framewrap{height:720px}.sidebar{top:70px}}
+@media(max-width:420px){.layout{grid-template-columns:82px minmax(0,1fr);gap:7px;padding:7px 5px}.sidebar{padding:4px}.catbtn{font-size:10px;padding:7px 4px}.cardhead{padding:8px}.name{font-size:12px}.framewrap{height:570px}}
 </style>
 </head>
 <body>
 <header><div class="head"><div><h1>Mis precios</h1><div class="sub">Productos abiertos automáticamente</div></div><div class="sub" id="total"></div></div></header>
-<main id="products"></main>
+<div class="layout">
+ <aside class="sidebar" id="categories" aria-label="Categorías"></aside>
+ <main id="products"></main>
+</div>
 <footer>Si un comercio bloquea la visualización integrada, usá “Abrir ↗” para consultar su página.</footer>
 <script>
 const products=[
- {name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200"},
- {name:"Bondiola congelada x kg",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p"}
+ {category:"Cerdo",name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200"},
+ {category:"Cerdo",name:"Bondiola congelada x kg",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p"}
 ];
+let selectedCategory="Cerdo";
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-document.getElementById('total').textContent=products.length+' productos';
-document.getElementById('products').innerHTML=products.map((p,i)=>`
-<section class="card">
- <div class="cardhead">
-  <div><div class="store">${esc(p.store)}</div><div class="name">${esc(p.name)}</div></div>
-  <a class="open" href="${esc(p.url)}" target="_blank" rel="noopener">Abrir ↗</a>
- </div>
- <div class="framewrap"><iframe src="${esc(p.url)}" title="${esc(p.name)} - ${esc(p.store)}" loading="${i===0?'eager':'lazy'}" referrerpolicy="strict-origin-when-cross-origin" allow="clipboard-read; clipboard-write"></iframe></div>
- <div class="hint">Si ves un espacio en blanco o un mensaje de bloqueo, este comercio no permite mostrarse dentro de otra página.</div>
-</section>`).join('');
+function render(){
+ const categories=[...new Set(products.map(p=>p.category))];
+ if(!categories.includes(selectedCategory)) selectedCategory=categories[0]||"";
+ document.getElementById('total').textContent=products.length+' productos';
+ document.getElementById('categories').innerHTML=categories.map(c=>{
+  const count=products.filter(p=>p.category===c).length;
+  return '<button class="catbtn '+(c===selectedCategory?'active':'')+'" data-category="'+esc(c)+'">'+esc(c)+'<span class="catcount">'+count+' producto'+(count===1?'':'s')+'</span></button>';
+ }).join('');
+ document.querySelectorAll('.catbtn').forEach(b=>b.addEventListener('click',()=>{selectedCategory=b.dataset.category;render()}));
+ const items=products.filter(p=>p.category===selectedCategory);
+ document.getElementById('products').innerHTML=items.length?items.map((p,i)=>`
+ <section class="card">
+  <div class="cardhead">
+   <div><div class="store">${esc(p.store)}</div><div class="name">${esc(p.name)}</div></div>
+   <a class="open" href="${esc(p.url)}" target="_blank" rel="noopener">Abrir ↗</a>
+  </div>
+  <div class="framewrap"><iframe src="${esc(p.url)}" title="${esc(p.name)} - ${esc(p.store)}" loading="${i===0?'eager':'lazy'}" referrerpolicy="strict-origin-when-cross-origin" allow="clipboard-read; clipboard-write"></iframe></div>
+  <div class="hint">Si ves un espacio en blanco o un mensaje de bloqueo, este comercio no permite mostrarse dentro de otra página.</div>
+ </section>`).join(''):'<div class="empty">Todavía no hay productos en esta categoría.</div>';
+}
+render();
 </script>
 </body>
 </html>
