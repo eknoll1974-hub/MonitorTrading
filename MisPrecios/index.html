@@ -41,7 +41,13 @@ const products=[
  {category:"Cerdo",name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200"},
  {category:"Cerdo",name:"Bondiola congelada x kg",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p"},
  {category:"Cerdo",name:"Nalga de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/nalga-de-cerdo-x-kg-/_/R-00017705-00017705-200"},
- {category:"Almacén",name:"Pan rallado y rebozadores",store:"Carrefour",url:"https://www.carrefour.com.ar/almacen/harinas/pan-rallado-y-rebozadores"}
+ {category:"Almacén",name:"Pan rallado y rebozadores",store:"Carrefour",url:"https://www.carrefour.com.ar/almacen/harinas/pan-rallado-y-rebozadores",priceList:[
+  {name:"Pan rallado Carrefour Classic",size:"1 kg",price:2640,checked:"17/11/2026",source:"Historial de precios"},
+  {name:"Pan rallado Mamá Cocina fortificado",size:"500 g",price:1669,checked:"16/11/2026",source:"Garpa"},
+  {name:"Pan rallado Morixe",size:"1 kg",price:2835,checked:"17/11/2026",source:"Preciazos"},
+  {name:"Pan rallado Mamá Cocina con ajo y perejil",size:"500 g",price:2089,checked:"17/11/2026",source:"Historial de precios"},
+  {name:"Rebozador Mamá Cocina para horno",size:"500 g",price:1939,checked:"17/11/2026",source:"Historial de precios"}
+ ]}
 ];
 let selectedCategory="Almacén";
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -59,9 +65,9 @@ function render(){
  <section class="card">
   <div class="cardhead">
    <div><div class="store">${esc(p.store)}</div><div class="name">${esc(p.name)}</div></div>
-   <a class="open" href="${esc(p.url)}" target="_blank" rel="noopener">Abrir ↗</a>
+   ${p.priceList?'':'<a class="open" href="'+esc(p.url)+'" target="_blank" rel="noopener">Abrir ↗</a>'}
   </div>
-  ${p.store==="Carrefour" ? '<div class="framewrap" style="height:auto;min-height:150px;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center"><div><div style="font-weight:700;margin-bottom:8px">Consulta los productos y precios directamente en Carrefour</div><a href="'+esc(p.url)+'" target="_blank" rel="noopener" style="display:inline-block;background:#2457d6;color:#fff;text-decoration:none;padding:11px 18px;border-radius:8px;font-weight:700">Ver en Carrefour ↗</a><div style="font-size:11px;color:#687386;margin-top:9px">Carrefour no permite mostrar esta página dentro de Mis Precios.</div></div></div>' : '<div class="framewrap"><iframe src="'+esc(p.url)+'" title="'+esc(p.name)+' - '+esc(p.store)+'" loading="'+(i===0?'eager':'lazy')+'" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Si el comercio bloquea la visualización integrada, usá “Abrir ↗”.</div>'}
+  ${p.priceList ? '<div style="padding:8px 11px"><div style="font-size:11px;color:#687386;margin-bottom:8px">Precios relevados para Carrefour · referencia AMBA · consulta 17/11/2026</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px">'+p.priceList.map(x=>'<div style="padding:10px 0;border-top:1px solid #edf0f4"><div style="font-weight:650">'+esc(x.name)+'</div><div style="font-size:11px;color:#687386">'+esc(x.size)+' · '+esc(x.source)+' · '+esc(x.checked)+'</div></div><div style="padding:10px 0;border-top:1px solid #edf0f4;align-self:center;font-weight:800;white-space:nowrap">'+x.price.toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0})+'</div>').join('')+'</div><div class="hint" style="margin:0 -11px -8px">Son precios publicados por comparadores externos, no una consulta directa del stock de tu sucursal. Pueden variar; se actualizarán cuando vuelva a consultar las fuentes.</div></div>' : '<div class="framewrap"><iframe src="'+esc(p.url)+'" title="'+esc(p.name)+' - '+esc(p.store)+'" loading="'+(i===0?'eager':'lazy')+'" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Si el comercio bloquea la visualización integrada, usá “Abrir ↗”.</div>'}
  </section>`).join(''):'<div class="empty">Todavía no hay productos en esta categoría.</div>';
 }
 render();
