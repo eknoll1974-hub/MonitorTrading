@@ -61,8 +61,7 @@ function render(){
    <div><div class="store">${esc(p.store)}</div><div class="name">${esc(p.name)}</div></div>
    <a class="open" href="${esc(p.url)}" target="_blank" rel="noopener">Abrir ↗</a>
   </div>
-  <div class="framewrap"><iframe src="${esc(p.url)}" title="${esc(p.name)} - ${esc(p.store)}" loading="${i===0?'eager':'lazy'}" referrerpolicy="strict-origin-when-cross-origin" allow="clipboard-read; clipboard-write"></iframe></div>
-  <div class="hint">Si ves un espacio en blanco o un mensaje de bloqueo, este comercio no permite mostrarse dentro de otra página.</div>
+  ${p.store==="Carrefour" ? '<div class="framewrap" style="height:auto;min-height:150px;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center"><div><div style="font-weight:700;margin-bottom:8px">Consulta los productos y precios directamente en Carrefour</div><a href="'+esc(p.url)+'" target="_blank" rel="noopener" style="display:inline-block;background:#2457d6;color:#fff;text-decoration:none;padding:11px 18px;border-radius:8px;font-weight:700">Ver en Carrefour ↗</a><div style="font-size:11px;color:#687386;margin-top:9px">Carrefour no permite mostrar esta página dentro de Mis Precios.</div></div></div>' : '<div class="framewrap"><iframe src="'+esc(p.url)+'" title="'+esc(p.name)+' - '+esc(p.store)+'" loading="'+(i===0?'eager':'lazy')+'" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Si el comercio bloquea la visualización integrada, usá “Abrir ↗”.</div>'}
  </section>`).join(''):'<div class="empty">Todavía no hay productos en esta categoría.</div>';
 }
 render();
