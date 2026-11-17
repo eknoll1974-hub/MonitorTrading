@@ -6,51 +6,41 @@
 <meta name="theme-color" content="#172554">
 <title>Mis precios</title>
 <style>
-:root{color-scheme:light;--bg:#f3f5f9;--card:#fff;--ink:#172033;--muted:#687386;--line:#e4e8ef;--blue:#2457d6;--green:#087443;--red:#b42318}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{background:#172554;color:#fff;padding:18px 15px;position:sticky;top:0;z-index:5;box-shadow:0 2px 12px #17255422}.top{max-width:760px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}h1{font-size:21px;margin:0;font-weight:750}.sub{font-size:12px;color:#cbd5e1;margin-top:3px}
-button{border:0;border-radius:11px;padding:11px 13px;font:inherit;font-weight:650;cursor:pointer}.primary{background:var(--blue);color:#fff}.light{background:#eaf0ff;color:#1d48b5}.ghost{background:#eef1f6;color:#344054}.danger{background:#fff0ef;color:var(--red)}
-main{max-width:760px;margin:auto;padding:15px 12px 40px}.toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:13px}.count{color:var(--muted);font-size:12px;margin-left:auto}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:11px;box-shadow:0 3px 12px #17255408}.merchant{font-size:11px;font-weight:800;letter-spacing:.08em;color:#596579;text-transform:uppercase}.product{font-size:17px;font-weight:750;margin:5px 0 8px}.price{font-size:29px;line-height:1.15;font-weight:800;letter-spacing:-.03em;margin:4px 0}.status{font-size:12px;color:var(--muted)}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.actions button{font-size:13px;padding:9px 10px}.link{display:inline-block;margin-top:5px;font-size:13px;color:var(--blue);word-break:break-all;text-decoration:none}
-.empty{background:#fff;border:1px dashed #c8d0dd;border-radius:16px;padding:28px 18px;text-align:center;color:var(--muted)}
-.modal{display:none;position:fixed;inset:0;background:#11182788;z-index:10;padding:14px;overflow:auto}.panel{background:#fff;border-radius:18px;padding:18px;max-width:560px;margin:28px auto;box-shadow:0 20px 60px #0003}.panel h2{margin:0 0 12px;font-size:20px}label{display:block;font-size:13px;font-weight:700;margin:11px 0 5px}input{width:100%;padding:12px;border:1px solid #cbd3df;border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.row{display:flex;gap:8px;margin-top:15px}.row button{flex:1}.note{font-size:12px;color:var(--muted);line-height:1.45;margin-top:12px}footer{text-align:center;color:#8791a1;font-size:11px;padding:8px 18px 24px}
+*{box-sizing:border-box}body{margin:0;background:#f1f3f7;color:#172033;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:#172554;color:#fff;padding:12px 14px;box-shadow:0 2px 10px #17255430}
+.head{max-width:850px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}h1{font-size:18px;margin:0}.sub{font-size:11px;color:#cbd5e1}
+main{max-width:850px;margin:auto;padding:10px 9px 30px}
+.card{background:#fff;border:1px solid #e0e5ed;border-radius:12px;overflow:hidden;margin-bottom:11px;box-shadow:0 2px 7px #14213d0b}
+.cardhead{padding:9px 11px;display:flex;align-items:center;gap:8px;min-height:43px}
+.name{font-weight:750;font-size:14px;min-width:0;overflow-wrap:anywhere}.store{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#687386;font-weight:800}
+.open{margin-left:auto;white-space:nowrap;color:#2457d6;text-decoration:none;font-size:11px;font-weight:700}
+.framewrap{height:620px;background:#fff;border-top:1px solid #e8ebf0;position:relative}
+iframe{display:block;width:100%;height:100%;border:0;background:#fff}
+.hint{padding:8px 11px;color:#687386;font-size:11px;background:#fafbfc;border-top:1px solid #edf0f4}
+footer{text-align:center;color:#8791a1;font-size:10px;padding:8px 12px 20px}
+@media(min-width:600px){main{padding:14px}.framewrap{height:720px}}
 </style>
 </head>
 <body>
-<header><div class="top"><div><h1>Mis precios</h1><div class="sub">Comparador de productos · vista móvil</div></div><button class="light" onclick="openForm()">＋ Agregar URL</button></div></header>
-<main>
-<div class="toolbar"><button class="ghost" onclick="exportData()">Exportar lista</button><button class="ghost" onclick="document.getElementById('file').click()">Importar lista</button><input id="file" type="file" accept=".json,application/json" hidden onchange="importData(event)"><span class="count" id="count"></span></div>
-<section id="cards"></section>
-<footer>Los enlaces y precios se guardan en este dispositivo. Confirmá siempre el precio final en el comercio.</footer>
-</main>
-<div class="modal" id="modal"><div class="panel"><h2 id="formTitle">Agregar producto</h2><input id="editId" type="hidden">
-<label for="name">Nombre del producto</label><input id="name" placeholder="Ej. Bondiola por kg">
-<label for="store">Comercio</label><input id="store" placeholder="Ej. Coto">
-<label for="url">URL exacta del producto</label><input id="url" type="url" inputmode="url" placeholder="https://...">
-<label for="price">Precio publicado (opcional)</label><input id="price" inputmode="decimal" placeholder="Ej. 5999">
-<div class="row"><button class="ghost" onclick="closeForm()">Cancelar</button><button class="primary" onclick="saveItem()">Guardar</button></div>
-<p class="note">La detección automática de precios no está habilitada en esta versión: muchos supermercados bloquean la lectura desde otra página (CORS/antibots). Podés guardar el enlace, cargar el precio manualmente y abrir el producto con un toque.</p></div></div>
+<header><div class="head"><div><h1>Mis precios</h1><div class="sub">Productos abiertos automáticamente</div></div><div class="sub" id="total"></div></div></header>
+<main id="products"></main>
+<footer>Si un comercio bloquea la visualización integrada, usá “Abrir ↗” para consultar su página.</footer>
 <script>
-const KEY='mis-precios-v2';
-const initial=[
-{id:'coto-bondiola',name:'Bondiola de cerdo x kg',store:'Coto',url:'https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200',price:'',updated:''},
-{id:'carrefour-bondiola',name:'Bondiola congelada x kg',store:'Carrefour',url:'https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p',price:'',updated:''}
+const products=[
+ {name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200"},
+ {name:"Bondiola congelada x kg",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p"}
 ];
-let items=load();
-function load(){try{let v=JSON.parse(localStorage.getItem(KEY));return Array.isArray(v)?v:initial.slice()}catch(e){return initial.slice()}}
-function persist(){localStorage.setItem(KEY,JSON.stringify(items));render()}
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function money(v){if(!v)return 'Precio sin cargar';let n=Number(String(v).replace(/[^\d,.-]/g,'').replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.'));return Number.isFinite(n)?n.toLocaleString('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:2}):esc(v)}
-function render(){let root=document.getElementById('cards');document.getElementById('count').textContent=items.length+' productos';if(!items.length){root.innerHTML='<div class="empty">Todavía no agregaste productos.<br>Usá “Agregar URL” para empezar.</div>';return}
-root.innerHTML=items.map(x=>'<article class="card"><div class="merchant">'+esc(x.store||'Comercio')+'</div><div class="product">'+esc(x.name||'Producto')+'</div><div class="price">'+money(x.price)+'</div><div class="status">'+(x.updated?'Precio cargado: '+esc(x.updated):'Precio pendiente de cargar')+'</div><a class="link" href="'+esc(x.url)+'" target="_blank" rel="noopener">Abrir producto ↗</a><div class="actions"><button class="light" onclick="editItem(\''+esc(x.id)+'\')">Editar</button><button class="ghost" onclick="setPrice(\''+esc(x.id)+'\')">Cargar precio</button><button class="danger" onclick="removeItem(\''+esc(x.id)+'\')">Eliminar</button></div></article>').join('')}
-function openForm(x){document.getElementById('modal').style.display='block';document.getElementById('formTitle').textContent=x?'Editar producto':'Agregar producto';document.getElementById('editId').value=x?.id||'';document.getElementById('name').value=x?.name||'';document.getElementById('store').value=x?.store||'';document.getElementById('url').value=x?.url||'';document.getElementById('price').value=x?.price||''}
-function closeForm(){document.getElementById('modal').style.display='none'}
-function saveItem(){let name=document.getElementById('name').value.trim(),store=document.getElementById('store').value.trim(),url=document.getElementById('url').value.trim(),price=document.getElementById('price').value.trim(),id=document.getElementById('editId').value;if(!name||!url){alert('Completá el nombre y la URL.');return}try{let u=new URL(url);if(!['http:','https:'].includes(u.protocol))throw 0}catch(e){alert('Ingresá una URL válida (https:// o http://).');return}let old=items.find(x=>x.id===id),obj={id:id||'p-'+Date.now(),name,store,url,price,updated:price?new Date().toLocaleString('es-AR'):old?.updated||''};if(old)items=items.map(x=>x.id===id?obj:x);else items.push(obj);persist();closeForm()}
-function editItem(id){let x=items.find(a=>a.id===id);if(x)openForm(x)}
-function setPrice(id){let x=items.find(a=>a.id===id);if(!x)return;let v=prompt('Ingresá el precio publicado (solo número):',x.price||'');if(v===null)return;x.price=v.trim();x.updated=v.trim()?new Date().toLocaleString('es-AR'):'';persist()}
-function removeItem(id){let x=items.find(a=>a.id===id);if(x&&confirm('¿Eliminar '+x.name+'?')){items=items.filter(a=>a.id!==id);persist()}}
-function exportData(){let b=new Blob([JSON.stringify(items,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='mis-precios.json';a.click();URL.revokeObjectURL(a.href)}
-function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!Array.isArray(d))throw 0;if(confirm('La importación reemplazará la lista actual. ¿Continuar?')){items=d.filter(x=>x&&x.url&&x.name);persist();alert('Lista importada.')}}catch(err){alert('El archivo no tiene un formato válido.')}e.target.value=''};r.readAsText(f)}
-render();
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+document.getElementById('total').textContent=products.length+' productos';
+document.getElementById('products').innerHTML=products.map((p,i)=>`
+<section class="card">
+ <div class="cardhead">
+  <div><div class="store">${esc(p.store)}</div><div class="name">${esc(p.name)}</div></div>
+  <a class="open" href="${esc(p.url)}" target="_blank" rel="noopener">Abrir ↗</a>
+ </div>
+ <div class="framewrap"><iframe src="${esc(p.url)}" title="${esc(p.name)} - ${esc(p.store)}" loading="${i===0?'eager':'lazy'}" referrerpolicy="strict-origin-when-cross-origin" allow="clipboard-read; clipboard-write"></iframe></div>
+ <div class="hint">Si ves un espacio en blanco o un mensaje de bloqueo, este comercio no permite mostrarse dentro de otra página.</div>
+</section>`).join('');
 </script>
-</body></html>
+</body>
+</html>
