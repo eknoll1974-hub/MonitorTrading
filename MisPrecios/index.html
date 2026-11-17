@@ -32,14 +32,14 @@ footer{text-align:center;color:#8791a1;font-size:10px;padding:8px 12px 20px}
 </style>
 </head>
 <body>
-<header><div class="head"><div><h1>Mis precios</h1><div class="sub">Comparador de productos · versión 17/11/2026-3</div></div><div class="sub" id="total"></div></div></header>
+<header><div class="head"><div><h1>Mis precios</h1><div class="sub">Comparador de productos · versión 17/11/2026-4</div></div><div class="sub" id="total"></div></div></header>
 <div class="layout">
  <aside class="sidebar" id="categories" aria-label="Categorías"></aside>
  <main id="products"></main>
 </div>
 <footer>Si un comercio bloquea la visualización integrada, usá “Abrir ↗” para consultar su página.</footer>
 <script>
-const categoriesList=["Cerdo","Almacén","Supremas"];
+const categoriesList=["Cerdo","Almacén","Supremas","Limpieza"];
 const products=[
  {category:"Cerdo",name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200"},
  {category:"Cerdo",name:"Bondiola de cerdo por kilo",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p",priceList:[
@@ -62,6 +62,12 @@ const products=[
   {name:"Suprema sin piel congelada",brand:"Coto / marca propia",size:"1 kg",price:17999,checked:"17/11/2026",source:"Coto Digital"},
   {name:"Suprema sin piel fresca/refrigerada",brand:"Coto / marca propia",size:"1,46 kg · paquete $25.378,59",price:17382.6,checked:"17/11/2026",source:"Coto Digital · precio por kg calculado"}
  ]}
+ ,
+ {category:"Limpieza",name:"Jabón líquido Skip para diluir Bio-Enzimas 500 ml",store:"Coto y Carrefour",url:"https://www.coto.com.ar/productos/jabon-liquido-para-diluir-skip-500ml-/_/R-00531047-00531047-200",priceList:[
+  {name:"Skip Bio-Enzimas para diluir 500 ml",brand:"Skip",size:"500 ml · $15.593,86 por litro",price:7796.93,checked:"12/11/2026",source:"Coto · CuantoMeSale"},
+  {name:"Skip Bio-Enzimas para diluir 500 ml",brand:"Skip",size:"500 ml · $18.530 por litro",price:9265,checked:"12/11/2026",source:"Carrefour · CuantoMeSale"}
+ ]}
+
 ];
 let selectedCategory="Almacén";
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
