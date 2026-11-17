@@ -32,14 +32,14 @@ footer{text-align:center;color:#8791a1;font-size:10px;padding:8px 12px 20px}
 </style>
 </head>
 <body>
-<header><div class="head"><div><h1>Mis precios</h1><div class="sub">Comparador de productos · versión 17/11/2026-2</div></div><div class="sub" id="total"></div></div></header>
+<header><div class="head"><div><h1>Mis precios</h1><div class="sub">Comparador de productos · versión 17/11/2026-3</div></div><div class="sub" id="total"></div></div></header>
 <div class="layout">
  <aside class="sidebar" id="categories" aria-label="Categorías"></aside>
  <main id="products"></main>
 </div>
 <footer>Si un comercio bloquea la visualización integrada, usá “Abrir ↗” para consultar su página.</footer>
 <script>
-const categoriesList=["Cerdo","Almacén"];
+const categoriesList=["Cerdo","Almacén","Supremas"];
 const products=[
  {category:"Cerdo",name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200"},
  {category:"Cerdo",name:"Bondiola de cerdo por kilo",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p",priceList:[
@@ -53,6 +53,14 @@ const products=[
   {name:"Pan rallado Plus fortificado",brand:"Mamá Cocina",size:"1 kg",price:3150,checked:"13/11/2026",source:"Preciazos"},
   {name:"Pan rallado nutritivo",brand:"Lucchetti",size:"1 kg",price:3650,checked:"14/11/2026",source:"Promoductos"},
   {name:"Pan rallado fortificado",brand:"Preferido",size:"1 kg",price:3989,checked:"13/11/2026",source:"Preciazos"}
+ ]}
+ ,
+ {category:"Supremas",name:"Suprema de pollo congelada · 2 kg",store:"Carrefour",url:"https://www.carrefour.com.ar/suprema-congelada-2-kg-787049/p",priceList:[
+  {name:"Suprema de pollo congelada",brand:"Genérico",size:"2 kg",price:9450,checked:"17/11/2026",source:"Carrefour · paquete $18.900"}
+ ]},
+ {category:"Supremas",name:"Supremas de pollo frescas y congeladas",store:"Coto",url:"https://www.coto.com.ar/categoria/_/N-1ugrnogZ1ozthvgZndoj69?Nf=product.endDate%7CGTEQ+1.7337024E12%7C%7Cproduct.startDate%7CLTEQ+1.7337024E12%7C%7Cproduct.startDate%7CLTEQ+1.693872E12%7C%7Cproduct.endDate%7CGTEQ+1.693872E12&Nr=AND%28product.language%3Aespa%C3%B1ol%2Cproduct.sDisp_200%3A1004%2COR%28product.siteId%3ACotoDigital%29%29&Nrpp=72&Ns=sku.activePrice%7C1%7C%7Cproduct.displayName%7C0&showMoreIds=4291659268",priceList:[
+  {name:"Suprema sin piel congelada",brand:"Coto / marca propia",size:"1 kg",price:17999,checked:"17/11/2026",source:"Coto Digital"},
+  {name:"Suprema sin piel fresca/refrigerada",brand:"Coto / marca propia",size:"1,46 kg · paquete $25.378,59",price:17382.6,checked:"17/11/2026",source:"Coto Digital · precio por kg calculado"}
  ]}
 ];
 let selectedCategory="Almacén";
@@ -71,9 +79,9 @@ function render(){
  <section class="card">
   <div class="cardhead">
    <div><div class="store">${esc(p.store)}</div><div class="name">${esc(p.name)}</div></div>
-   ${'<a class="open" href="'+esc(p.url)+'" target="_blank" rel="noopener">Abrir Carrefour ↗</a>'}
+   ${'<a class="open" href="'+esc(p.url)+'" target="_blank" rel="noopener">Abrir ${esc(p.store)} ↗</a>'}
   </div>
-  ${p.priceList ? '<div style="padding:8px 11px"><div style="font-size:11px;color:#687386;margin-bottom:8px">Precios por kilo · referencia AMBA · relevados el 17/11/2026</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px">'+p.priceList.map(x=>'<div style="padding:10px 0;border-top:1px solid #edf0f4"><div style="font-weight:650">'+esc(x.name)+'</div><div style="font-size:11px;color:#687386">'+esc(x.brand)+' · '+esc(x.size)+' · '+esc(x.source)+' · '+esc(x.checked)+'</div></div><div style="padding:10px 0;border-top:1px solid #edf0f4;align-self:center;font-weight:800;white-space:nowrap">'+x.price.toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0})+'</div>').join('')+'</div><div class="hint" style="margin:0 -11px -8px">Precios relevados en comparadores de supermercados; no son una lectura en vivo del stock de tu sucursal. Pueden variar según zona, promociones y disponibilidad.</div></div>' : '<div class="framewrap"><iframe src="'+esc(p.url)+'" title="'+esc(p.name)+' - '+esc(p.store)+'" loading="'+(i===0?'eager':'lazy')+'" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Si el comercio bloquea la visualización integrada, usá “Abrir ↗”.</div>'}
+  ${p.priceList ? '<div style="padding:8px 11px"><div style="font-size:11px;color:#687386;margin-bottom:8px">Precios por kilo · relevamiento del 17/11/2026</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px">'+p.priceList.map(x=>'<div style="padding:10px 0;border-top:1px solid #edf0f4"><div style="font-weight:650">'+esc(x.name)+'</div><div style="font-size:11px;color:#687386">'+esc(x.brand)+' · '+esc(x.size)+' · '+esc(x.source)+' · '+esc(x.checked)+'</div></div><div style="padding:10px 0;border-top:1px solid #edf0f4;align-self:center;font-weight:800;white-space:nowrap">'+x.price.toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0})+'</div>').join('')+'</div><div class="hint" style="margin:0 -11px -8px">Precios relevados en comparadores de supermercados; no son una lectura en vivo del stock de tu sucursal. Pueden variar según zona, promociones y disponibilidad.</div></div>' : '<div class="framewrap"><iframe src="'+esc(p.url)+'" title="'+esc(p.name)+' - '+esc(p.store)+'" loading="'+(i===0?'eager':'lazy')+'" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Si el comercio bloquea la visualización integrada, usá “Abrir ↗”.</div>'}
  </section>`).join(''):'<div class="empty">Todavía no hay productos en esta categoría.</div>';
 }
 render();
