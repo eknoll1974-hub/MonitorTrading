@@ -39,14 +39,17 @@ footer{text-align:center;color:#8791a1;font-size:10px;padding:8px 12px 20px}
 const categoriesList=["Cerdo","Almacén"];
 const products=[
  {category:"Cerdo",name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200"},
- {category:"Cerdo",name:"Bondiola congelada x kg",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p"},
+ {category:"Cerdo",name:"Bondiola de cerdo por kilo",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p",priceList:[
+  {name:"Bondiola de cerdo congelada",brand:"Carrefour / marca genérica",size:"1 kg",price:8990,checked:"17/11/2026",source:"Pricely"},
+  {name:"Bondiola fresca MP",brand:"Genérico",size:"1 kg",price:10500,checked:"17/11/2026",source:"Historial de Precios"}
+ ]},
  {category:"Cerdo",name:"Nalga de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/nalga-de-cerdo-x-kg-/_/R-00017705-00017705-200"},
- {category:"Almacén",name:"Pan rallado y rebozadores",store:"Carrefour",url:"https://www.carrefour.com.ar/almacen/harinas/pan-rallado-y-rebozadores",priceList:[
-  {name:"Pan rallado Carrefour Classic",size:"1 kg",price:2640,checked:"17/11/2026",source:"Historial de precios"},
-  {name:"Pan rallado Mamá Cocina fortificado",size:"500 g",price:1669,checked:"16/11/2026",source:"Garpa"},
-  {name:"Pan rallado Morixe",size:"1 kg",price:2835,checked:"17/11/2026",source:"Preciazos"},
-  {name:"Pan rallado Mamá Cocina con ajo y perejil",size:"500 g",price:2089,checked:"17/11/2026",source:"Historial de precios"},
-  {name:"Rebozador Mamá Cocina para horno",size:"500 g",price:1939,checked:"17/11/2026",source:"Historial de precios"}
+ {category:"Almacén",name:"Pan rallado 1 kg · 5 opciones más económicas",store:"Carrefour",url:"https://www.carrefour.com.ar/almacen/harinas/pan-rallado-y-rebozadores",priceList:[
+  {name:"Pan rallado Carrefour Classic",brand:"Carrefour",size:"1 kg",price:2640,checked:"17/11/2026",source:"Historial de Precios"},
+  {name:"Pan rallado Morixe",brand:"Morixe",size:"1 kg",price:2835,checked:"14/11/2026",source:"Promoductos"},
+  {name:"Pan rallado Plus fortificado",brand:"Mamá Cocina",size:"1 kg",price:3150,checked:"13/11/2026",source:"Preciazos"},
+  {name:"Pan rallado nutritivo",brand:"Lucchetti",size:"1 kg",price:3650,checked:"14/11/2026",source:"Promoductos"},
+  {name:"Pan rallado fortificado",brand:"Preferido",size:"1 kg",price:3989,checked:"13/11/2026",source:"Preciazos"}
  ]}
 ];
 let selectedCategory="Almacén";
@@ -65,9 +68,9 @@ function render(){
  <section class="card">
   <div class="cardhead">
    <div><div class="store">${esc(p.store)}</div><div class="name">${esc(p.name)}</div></div>
-   ${p.priceList?'':'<a class="open" href="'+esc(p.url)+'" target="_blank" rel="noopener">Abrir ↗</a>'}
+   ${'<a class="open" href="'+esc(p.url)+'" target="_blank" rel="noopener">Abrir Carrefour ↗</a>'}
   </div>
-  ${p.priceList ? '<div style="padding:8px 11px"><div style="font-size:11px;color:#687386;margin-bottom:8px">Precios relevados para Carrefour · referencia AMBA · consulta 17/11/2026</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px">'+p.priceList.map(x=>'<div style="padding:10px 0;border-top:1px solid #edf0f4"><div style="font-weight:650">'+esc(x.name)+'</div><div style="font-size:11px;color:#687386">'+esc(x.size)+' · '+esc(x.source)+' · '+esc(x.checked)+'</div></div><div style="padding:10px 0;border-top:1px solid #edf0f4;align-self:center;font-weight:800;white-space:nowrap">'+x.price.toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0})+'</div>').join('')+'</div><div class="hint" style="margin:0 -11px -8px">Son precios publicados por comparadores externos, no una consulta directa del stock de tu sucursal. Pueden variar; se actualizarán cuando vuelva a consultar las fuentes.</div></div>' : '<div class="framewrap"><iframe src="'+esc(p.url)+'" title="'+esc(p.name)+' - '+esc(p.store)+'" loading="'+(i===0?'eager':'lazy')+'" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Si el comercio bloquea la visualización integrada, usá “Abrir ↗”.</div>'}
+  ${p.priceList ? '<div style="padding:8px 11px"><div style="font-size:11px;color:#687386;margin-bottom:8px">Precios por kilo · referencia AMBA · relevados el 17/11/2026</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px">'+p.priceList.map(x=>'<div style="padding:10px 0;border-top:1px solid #edf0f4"><div style="font-weight:650">'+esc(x.name)+'</div><div style="font-size:11px;color:#687386">'+esc(x.brand)+' · '+esc(x.size)+' · '+esc(x.source)+' · '+esc(x.checked)+'</div></div><div style="padding:10px 0;border-top:1px solid #edf0f4;align-self:center;font-weight:800;white-space:nowrap">'+x.price.toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0})+'</div>').join('')+'</div><div class="hint" style="margin:0 -11px -8px">Precios relevados en comparadores de supermercados; no son una lectura en vivo del stock de tu sucursal. Pueden variar según zona, promociones y disponibilidad.</div></div>' : '<div class="framewrap"><iframe src="'+esc(p.url)+'" title="'+esc(p.name)+' - '+esc(p.store)+'" loading="'+(i===0?'eager':'lazy')+'" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Si el comercio bloquea la visualización integrada, usá “Abrir ↗”.</div>'}
  </section>`).join(''):'<div class="empty">Todavía no hay productos en esta categoría.</div>';
 }
 render();
