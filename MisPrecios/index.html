@@ -32,7 +32,7 @@ footer{text-align:center;color:#8791a1;font-size:10px;padding:8px 12px 20px}
 </style>
 </head>
 <body>
-<header><div class="head"><div><h1>Mis precios</h1><div class="sub">Comparador de productos · versión 17/11/2026-4</div></div><div class="sub" id="total"></div></div></header>
+<header><div class="head"><div><h1>Mis precios</h1><div class="sub">Comparador de productos · actualización automática SEPA</div></div><div class="sub" id="refreshStatus">Consultando precios…</div></div></header>
 <div class="layout">
  <aside class="sidebar" id="categories" aria-label="Categorías"></aside>
  <main id="products"></main>
@@ -40,57 +40,58 @@ footer{text-align:center;color:#8791a1;font-size:10px;padding:8px 12px 20px}
 <footer>Si un comercio bloquea la visualización integrada, usá “Abrir ↗” para consultar su página.</footer>
 <script>
 const categoriesList=["Cerdo","Almacén","Supremas","Limpieza"];
+const SEPA_BASE="https://hysmarcos.github.io/superprecios-claros/v1";
+const SEPA_REGION="CENTRO";
 const products=[
- {category:"Cerdo",name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200"},
- {category:"Cerdo",name:"Bondiola de cerdo por kilo",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p",priceList:[
-  {name:"Bondiola de cerdo congelada",brand:"Carrefour / marca genérica",size:"1 kg",price:8990,checked:"17/11/2026",source:"Pricely"},
-  {name:"Bondiola fresca MP",brand:"Genérico",size:"1 kg",price:10500,checked:"17/11/2026",source:"Historial de Precios"}
+ {category:"Cerdo",name:"Bondiola de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/bondiola-de-cerdo-x-kg-/_/R-00000943-00000943-200",autoItems:[{name:"Bondiola de cerdo x kg",brand:"Coto",ean:"2000943000004"}]},
+ {category:"Cerdo",name:"Bondiola congelada x kg",store:"Carrefour",url:"https://www.carrefour.com.ar/bondiola-congelada-x-kg-691385/p",autoItems:[{name:"Bondiola congelada x kg",brand:"Carrefour",ean:"2506785000009"}]},
+ {category:"Cerdo",name:"Nalga de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/nalga-de-cerdo-x-kg-/_/R-00017705-00017705-200",autoPending:true},
+ {category:"Almacén",name:"Pan rallado · presentaciones de 1 kg",store:"Carrefour y otros",url:"https://www.carrefour.com.ar/almacen/harinas/pan-rallado-y-rebozadores",autoItems:[
+  {name:"Pan rallado Carrefour Classic 1 kg",brand:"Carrefour",ean:"7798141714803"},
+  {name:"Pan rallado Morixe 1 kg",brand:"Morixe",ean:"7790199602927"}
  ]},
- {category:"Cerdo",name:"Nalga de cerdo x kg",store:"Coto",url:"https://www.coto.com.ar/productos/nalga-de-cerdo-x-kg-/_/R-00017705-00017705-200"},
- {category:"Almacén",name:"Pan rallado 1 kg · 5 opciones más económicas",store:"Carrefour",url:"https://www.carrefour.com.ar/almacen/harinas/pan-rallado-y-rebozadores",priceList:[
-  {name:"Pan rallado Carrefour Classic",brand:"Carrefour",size:"1 kg",price:2640,checked:"17/11/2026",source:"Historial de Precios"},
-  {name:"Pan rallado Morixe",brand:"Morixe",size:"1 kg",price:2835,checked:"14/11/2026",source:"Promoductos"},
-  {name:"Pan rallado Plus fortificado",brand:"Mamá Cocina",size:"1 kg",price:3150,checked:"13/11/2026",source:"Preciazos"},
-  {name:"Pan rallado nutritivo",brand:"Lucchetti",size:"1 kg",price:3650,checked:"14/11/2026",source:"Promoductos"},
-  {name:"Pan rallado fortificado",brand:"Preferido",size:"1 kg",price:3989,checked:"13/11/2026",source:"Preciazos"}
- ]}
- ,
- {category:"Supremas",name:"Suprema de pollo congelada · 2 kg",store:"Carrefour",url:"https://www.carrefour.com.ar/suprema-congelada-2-kg-787049/p",priceList:[
-  {name:"Suprema de pollo congelada",brand:"Genérico",size:"2 kg",price:9450,checked:"17/11/2026",source:"Carrefour · paquete $18.900"}
- ]},
- {category:"Supremas",name:"Supremas de pollo frescas y congeladas",store:"Coto",url:"https://www.coto.com.ar/categoria/_/N-1ugrnogZ1ozthvgZndoj69?Nf=product.endDate%7CGTEQ+1.7337024E12%7C%7Cproduct.startDate%7CLTEQ+1.7337024E12%7C%7Cproduct.startDate%7CLTEQ+1.693872E12%7C%7Cproduct.endDate%7CGTEQ+1.693872E12&Nr=AND%28product.language%3Aespa%C3%B1ol%2Cproduct.sDisp_200%3A1004%2COR%28product.siteId%3ACotoDigital%29%29&Nrpp=72&Ns=sku.activePrice%7C1%7C%7Cproduct.displayName%7C0&showMoreIds=4291659268",priceList:[
-  {name:"Suprema sin piel congelada",brand:"Coto / marca propia",size:"1 kg",price:17999,checked:"17/11/2026",source:"Coto Digital"},
-  {name:"Suprema sin piel fresca/refrigerada",brand:"Coto / marca propia",size:"1,46 kg · paquete $25.378,59",price:17382.6,checked:"17/11/2026",source:"Coto Digital · precio por kg calculado"}
- ]}
- ,
- {category:"Limpieza",name:"Jabón líquido Skip para diluir Bio-Enzimas 500 ml",store:"Coto y Carrefour",url:"https://www.coto.com.ar/productos/jabon-liquido-para-diluir-skip-500ml-/_/R-00531047-00531047-200",priceList:[
-  {name:"Skip Bio-Enzimas para diluir 500 ml",brand:"Skip",size:"500 ml · $15.593,86 por litro",price:7796.93,checked:"12/11/2026",source:"Coto · CuantoMeSale"},
-  {name:"Skip Bio-Enzimas para diluir 500 ml",brand:"Skip",size:"500 ml · $18.530 por litro",price:9265,checked:"12/11/2026",source:"Carrefour · CuantoMeSale"}
- ]}
-
+ {category:"Supremas",name:"Suprema de pollo congelada · 2 kg",store:"Carrefour",url:"https://www.carrefour.com.ar/suprema-congelada-2-kg-787049/p",autoPending:true},
+ {category:"Supremas",name:"Supremas de pollo frescas y congeladas",store:"Coto",url:"https://www.coto.com.ar/categoria/_/N-1ugrnogZ1ozthvgZndoj69?Nf=product.endDate%7CGTEQ+1.7337024E12%7C%7Cproduct.startDate%7CLTEQ+1.7337024E12%7C%7Cproduct.startDate%7CLTEQ+1.693872E12%7C%7Cproduct.endDate%7CGTEQ+1.693872E12&Nr=AND%28product.language%3Aespa%C3%B1ol%2Cproduct.sDisp_200%3A1004%2COR%28product.siteId%3ACotoDigital%29%29&Nrpp=72&Ns=sku.activePrice%7C1%7C%7Cproduct.displayName%7C0&showMoreIds=4291659268",autoPending:true},
+ {category:"Limpieza",name:"Jabón líquido Skip para diluir Bio-Enzimas 500 ml",store:"Coto y Carrefour",url:"https://www.coto.com.ar/productos/jabon-liquido-para-diluir-skip-500ml-/_/R-00531047-00531047-200",autoItems:[{name:"Skip Bio-Enzimas para diluir 500 ml",brand:"Skip",ean:"7791290792838",unit:"500 ml"}]}
 ];
 let selectedCategory="Almacén";
+let sepaPrices={},refreshMessage="Consultando precios…";
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>Number(n).toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:2});
+function allEans(){return [...new Set(products.flatMap(p=>(p.autoItems||[]).map(x=>x.ean)).filter(Boolean))]}
+function renderAuto(p){
+ if(p.autoPending)return '<div class="hint">Actualización automática pendiente: falta identificar el código de barras exacto para consultar SEPA. No mostramos precios estimados como actuales.</div>';
+ return '<div style="padding:8px 11px"><div style="font-size:11px;color:#536078;font-weight:700;margin-bottom:5px">Consulta automática · SEPA · región Buenos Aires (CENTRO)</div>'+(p.autoItems||[]).map(item=>{
+  const d=sepaPrices[item.ean],title='<b>'+esc(item.name)+'</b><div style="font-size:10px;color:#687386">Marca '+esc(item.brand||'')+' · EAN '+esc(item.ean)+'</div>';
+  if(!d)return '<div style="padding:9px 0;border-top:1px solid #edf0f4">'+title+'<div class="hint">Sin precio disponible en la consulta.</div></div>';
+  const stores=(d.precios||[]).filter(x=>/coto|carrefour/i.test(x.cadena?.nombre||''));
+  const rows=stores.map(x=>{const n=x.precio_efectivo??x.precio_lista;return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #edf0f4"><span>'+esc(x.cadena?.nombre||'Supermercado')+(x.promo?' · promoción':'')+'</span><b>'+(n!=null?money(n):'Sin precio')+'</b></div>'+(item.unit==='500 ml'&&n!=null?'<div style="font-size:10px;color:#687386;text-align:right">'+money(n*2)+' por litro</div>':'')}).join('');
+  return '<div style="padding:9px 0;border-top:1px solid #edf0f4">'+title+(rows||'<div class="hint">No hay precio informado para Coto o Carrefour en esta región.</div>')+'<div style="font-size:10px;color:#687386">Fecha del dato: '+esc(d.fecha||'no informada')+'</div></div>';
+ }).join('')+'<div class="hint" style="margin:4px -11px -8px">Fuente: SEPA, precios declarados por supermercados. Buenos Aires (CENTRO) no identifica específicamente cada sucursal de San Martín. No incluye descuentos bancarios.</div></div>';
+}
 function render(){
- const categories=categoriesList;
- if(!categories.includes(selectedCategory)) selectedCategory=categories[0]||"";
- document.getElementById('total').textContent=products.length+' productos';
- document.getElementById('categories').innerHTML=categories.map(c=>{
-  const count=products.filter(p=>p.category===c).length;
-  return '<button class="catbtn '+(c===selectedCategory?'active':'')+'" data-category="'+esc(c)+'">'+esc(c)+'<span class="catcount">'+count+' producto'+(count===1?'':'s')+'</span></button>';
- }).join('');
+ document.getElementById('refreshStatus').textContent=refreshMessage;
+ document.getElementById('categories').innerHTML=categoriesList.map(c=>'<button class="catbtn '+(c===selectedCategory?'active':'')+'" data-category="'+esc(c)+'">'+esc(c)+'<span class="catcount">'+products.filter(p=>p.category===c).length+' producto(s)</span></button>').join('');
  document.querySelectorAll('.catbtn').forEach(b=>b.addEventListener('click',()=>{selectedCategory=b.dataset.category;render()}));
  const items=products.filter(p=>p.category===selectedCategory);
- document.getElementById('products').innerHTML=items.length?items.map((p,i)=>`
- <section class="card">
-  <div class="cardhead">
-   <div><div class="store">${esc(p.store)}</div><div class="name">${esc(p.name)}</div></div>
-   ${'<a class="open" href="'+esc(p.url)+'" target="_blank" rel="noopener">Abrir ${esc(p.store)} ↗</a>'}
-  </div>
-  ${p.priceList ? '<div style="padding:8px 11px"><div style="font-size:11px;color:#687386;margin-bottom:8px">Precios por kilo · relevamiento del 17/11/2026</div><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px">'+p.priceList.map(x=>'<div style="padding:10px 0;border-top:1px solid #edf0f4"><div style="font-weight:650">'+esc(x.name)+'</div><div style="font-size:11px;color:#687386">'+esc(x.brand)+' · '+esc(x.size)+' · '+esc(x.source)+' · '+esc(x.checked)+'</div></div><div style="padding:10px 0;border-top:1px solid #edf0f4;align-self:center;font-weight:800;white-space:nowrap">'+x.price.toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:0})+'</div>').join('')+'</div><div class="hint" style="margin:0 -11px -8px">Precios relevados en comparadores de supermercados; no son una lectura en vivo del stock de tu sucursal. Pueden variar según zona, promociones y disponibilidad.</div></div>' : '<div class="framewrap"><iframe src="'+esc(p.url)+'" title="'+esc(p.name)+' - '+esc(p.store)+'" loading="'+(i===0?'eager':'lazy')+'" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><div class="hint">Si el comercio bloquea la visualización integrada, usá “Abrir ↗”.</div>'}
- </section>`).join(''):'<div class="empty">Todavía no hay productos en esta categoría.</div>';
+ document.getElementById('products').innerHTML=items.length?items.map(p=>'<section class="card"><div class="cardhead"><div><div class="store">'+esc(p.store)+'</div><div class="name">'+esc(p.name)+'</div></div><a class="open" href="'+esc(p.url)+'" target="_blank" rel="noopener">Abrir ↗</a></div>'+(p.autoItems||p.autoPending?renderAuto(p):'<div class="hint">Pendiente de asociar código de barras.</div>')+'</section>').join(''):'<div class="empty">Todavía no hay productos en esta categoría.</div>';
 }
-render();
+async function refreshPrices(){
+ render();const key='misPreciosSepaCache';
+ try{
+  const mr=await fetch(SEPA_BASE+'/manifest.json?open='+Date.now(),{cache:'no-store'});if(!mr.ok)throw Error('SEPA no disponible');
+  const manifest=await mr.json(),v=encodeURIComponent(manifest.version_tag||manifest.fecha||Date.now()),date=manifest.fecha||'';
+  const pairs=await Promise.all(allEans().map(async e=>{try{const r=await fetch(SEPA_BASE+'/sku/'+e+'/'+SEPA_REGION+'.json?v='+v,{cache:'no-store'});return [e,r.ok?await r.json():null]}catch(_){return [e,null]}}));
+  sepaPrices=Object.fromEntries(pairs.filter(x=>x[1]));
+  localStorage.setItem(key,JSON.stringify({prices:sepaPrices}));
+  const age=date?Math.floor((Date.now()-new Date(date+'T12:00:00-03:00'))/86400000):99;
+  refreshMessage='SEPA: '+(date||'fecha no informada')+(age>2?' · datos demorados':' · consultado al abrir');render();
+ }catch(e){
+  try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved?.prices){sepaPrices=saved.prices;refreshMessage='Sin conexión · último dato guardado (desactualizado)'}else refreshMessage='No se pudo conectar con SEPA · sin precio actualizado'}catch(_){refreshMessage='No se pudo conectar con SEPA · sin precio actualizado'}
+  render();
+ }
+}
+render();refreshPrices();
 </script>
 </body>
 </html>
