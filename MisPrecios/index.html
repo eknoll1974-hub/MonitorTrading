@@ -56,6 +56,7 @@ const products=[
 ];
 let selectedCategory="Almacén";
 let sepaPrices={},refreshMessage="Consultando precios…";
+const decodeEntities=s=>{const t=document.createElement('textarea');t.innerHTML=String(s??'');return t.value};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>Number(n).toLocaleString("es-AR",{style:"currency",currency:"ARS",maximumFractionDigits:2});
 function allEans(){return [...new Set(products.flatMap(p=>(p.autoItems||[]).map(x=>x.ean)).filter(Boolean))]}
@@ -65,7 +66,7 @@ function renderAuto(p){
   const d=sepaPrices[item.ean],title='<b>'+esc(item.name)+'</b><div style="font-size:10px;color:#687386">Marca '+esc(item.brand||'')+' · EAN '+esc(item.ean)+'</div>';
   if(!d)return '<div style="padding:9px 0;border-top:1px solid #edf0f4">'+title+'<div class="hint">Sin precio disponible en la consulta.</div></div>';
   const stores=(d.precios||[]).filter(x=>/coto|carrefour/i.test(x.cadena?.nombre||''));
-  const rows=stores.map(x=>{const n=x.precio_efectivo??x.precio_lista;return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #edf0f4"><span>'+esc(x.cadena?.nombre||'Supermercado')+(x.promo?' · promoción':'')+'</span><b>'+(n!=null?money(n):'Sin precio')+'</b></div>'+(item.unit==='500 ml'&&n!=null?'<div style="font-size:10px;color:#687386;text-align:right">'+money(n*2)+' por litro</div>':'')}).join('');
+  const rows=stores.map(x=>{const n=x.precio_efectivo??x.precio_lista;return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #edf0f4"><span>'+esc(decodeEntities(x.cadena?.nombre||'Supermercado'))+(x.promo?' · promoción':'')+'</span><b>'+(n!=null?money(n):'Sin precio')+'</b></div>'+(item.unit==='500 ml'&&n!=null?'<div style="font-size:10px;color:#687386;text-align:right">'+money(n*2)+' por litro</div>':'')}).join('');
   return '<div style="padding:9px 0;border-top:1px solid #edf0f4">'+title+(rows||'<div class="hint">No hay precio informado para Coto o Carrefour en esta región.</div>')+'<div style="font-size:10px;color:#687386">Fecha del dato: '+esc(d.fecha||'no informada')+'</div></div>';
  }).join('')+'<div class="hint" style="margin:4px -11px -8px">Fuente: SEPA, precios declarados por supermercados. Buenos Aires (CENTRO) no identifica específicamente cada sucursal de San Martín. No incluye descuentos bancarios.</div></div>';
 }
@@ -80,7 +81,7 @@ async function refreshPrices(){
  render();const key='misPreciosSepaCache';
  try{
   const mr=await fetch(SEPA_BASE+'/manifest.json?open='+Date.now(),{cache:'no-store'});if(!mr.ok)throw Error('SEPA no disponible');
-  const manifest=await mr.json(),v=encodeURIComponent(manifest.version_tag||manifest.fecha||Date.now()),date=manifest.fecha||'';
+  const manifest=await mr.json(),v=encodeURIComponent(manifest.version_tag||manifest.fecha||Date.now()),date=manifest.fecha_datos||manifest.fecha||'';
   const pairs=await Promise.all(allEans().map(async e=>{try{const r=await fetch(SEPA_BASE+'/sku/'+e+'/'+SEPA_REGION+'.json?v='+v,{cache:'no-store'});return [e,r.ok?await r.json():null]}catch(_){return [e,null]}}));
   sepaPrices=Object.fromEntries(pairs.filter(x=>x[1]));
   localStorage.setItem(key,JSON.stringify({prices:sepaPrices}));
